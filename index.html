@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Vault Pro — Smart Prompt Manager</title>
+  <link rel="icon" type="image/x-icon" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --dark: #0f172a;
+      --light: #f8fafc;
+      --glass: rgba(255, 255, 255, 0.05);
+      --glass2: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.1);
+      --border2: rgba(255, 255, 255, 0.18);
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #64748b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      color: var(--text);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+      animation: bgPulse 10s ease-in-out infinite;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% {
+        opacity: .5;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Sync indicator */
+    .sync-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      transition: all .3s;
+    }
+    .sync-indicator.syncing {
+      color: var(--warning);
+      border-color: rgba(245, 158, 11, .3);
+    }
+    .sync-indicator.synced {
+      color: var(--success);
+      border-color: rgba(16, 185, 129, .3);
+    }
+    .sync-indicator.error {
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, .3);
+    }
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+    .sync-indicator.syncing .sync-dot {
+      animation: pulse .8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: .3;
+      }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 30px 20px 10px;
+    }
+    .header h1 {
+      font-size: clamp(2em, 5vw, 3.5em);
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea 0%, #f093fb 50%, #4facfe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .header .subtitle {
+      font-size: 1.05em;
+      color: var(--text2);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    /* Setup Screen */
+    .setup-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      z-index: 10;
+    }
+    .setup-box {
+      background: rgba(30, 41, 59, .95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .5);
+      text-align: center;
+    }
+    .setup-box .icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .setup-box h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+    .setup-box p {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .setup-fields {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .setup-warn {
+      background: rgba(245, 158, 11, .1);
+      border: 1px solid rgba(245, 158, 11, .3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #fcd34d;
+      text-align: left;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .setup-note {
+      font-size: 11.5px;
+      color: var(--text3);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+    .setup-note a {
+      color: #818cf8;
+      text-decoration: none;
+    }
+    .setup-note a:hover {
+      text-decoration: underline;
+    }
+    .setup-note code {
+      background: rgba(99, 102, 241, .15);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #a5b4fc;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .3s;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(99, 102, 241, .3);
+    }
+    .btn-secondary {
+      background: var(--glass2);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, .15);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, .14);
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+    .btn-success:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, .2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, .3);
+    }
+    .btn-warning {
+      background: rgba(245, 158, 11, .2);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, .3);
+    }
+    .btn-info {
+      background: rgba(59, 130, 246, .2);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, .3);
+    }
+    .btn-info:hover {
+      background: rgba(59, 130, 246, .35);
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn-xs {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Form */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      color: var(--text2);
+      font-weight: 600;
+      font-size: .85em;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .form-input {
+      padding: 10px 14px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      transition: all .3s;
+      font-family: inherit;
+      width: 100%;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, .5);
+      box-shadow: 0 0 15px rgba(99, 102, 241, .1);
+    }
+    .form-input::placeholder {
+      color: var(--text3);
+    }
+    textarea.form-input {
+      resize: vertical;
+      min-height: 80px;
+    }
+    select.form-input {
+      cursor: pointer;
+    }
+    select.form-input option {
+      background: #1e293b;
+      color: var(--text);
+    }
+
+    /* Prompt Cards */
+    .prompts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .prompt-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all .3s;
+      position: relative;
+      border-left: 3px solid var(--primary);
+    }
+    .prompt-card:hover {
+      background: var(--glass2);
+      border-color: var(--border2);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+    }
+    .prompt-card .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .prompt-card .prompt-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1em;
+      font-weight: 700;
+      color: #f1f5f9;
+      word-break: break-word;
+    }
+    .prompt-card .prompt-category {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .75em;
+      font-weight: 600;
+      background: rgba(99, 102, 241, .2);
+      color: #a5b4fc;
+      white-space: nowrap;
+    }
+    .prompt-card .prompt-preview {
+      color: var(--text2);
+      font-size: .85em;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 80px;
+      overflow: hidden;
+      position: relative;
+    }
+    .prompt-card .prompt-preview::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: linear-gradient(transparent, rgba(15, 23, 42, 0.95));
+    }
+    .prompt-card .prompt-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text3);
+      font-size: .75em;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .prompt-card .prompt-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, .7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-overlay.show {
+      display: flex;
+    }
+    .modal {
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .5);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal h3 {
+      color: #f1f5f9;
+      margin-bottom: 20px;
+      font-size: 1.3em;
+    }
+
+    /* Copy toast */
+    .copy-toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10b981;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 9999;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+      animation: copyPop .4s ease;
+    }
+    @keyframes copyPop {
+      0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 90vw;
+    }
+    .toast {
+      background: rgba(30, 41, 59, .95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      color: #f1f5f9;
+      padding: 14px 20px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn .3s ease;
+      font-size: 14px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, .3);
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(300px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    .toast.success {
+      border-left: 3px solid var(--success);
+    }
+    .toast.error {
+      border-left: 3px solid var(--danger);
+    }
+
+    /* Filter chips */
+    .filter-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: var(--glass);
+      color: var(--text2);
+      font-size: .8em;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all .2s;
+    }
+    .chip.active {
+      background: rgba(99, 102, 241, .2);
+      border-color: rgba(99, 102, 241, .5);
+      color: #818cf8;
+    }
+    .chip:hover {
+      background: rgba(255, 255, 255, .1);
+    }
+
+    /* Search */
+    .search-wrapper {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .search-wrapper i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      font-size: 14px;
+    }
+    .search-wrapper input {
+      padding-left: 38px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+      .prompts-grid {
+        grid-template-columns: 1fr;
+      }
+      .modal {
+        padding: 20px;
+        margin: 10px;
+      }
+      .header h1 {
+        font-size: 1.8em;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, .05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, .3);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animation"></div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setupScreen" style="display:none;">
+    <div style="position:fixed;top:20px;right:20px;z-index:100;">
+      <button class="btn btn-secondary btn-sm" onclick="useLocalOnly()"><i class="fas fa-offline"></i> Use Local Only</button>
+    </div>
+    <div class="setup-screen">
+      <div class="setup-box">
+        <span class="icon">🔐</span>
+        <h2>Connect GitHub Storage</h2>
+        <p>Sync your prompts across all devices using GitHub. Data stored as <code>promptvault.json</code> in your repo.</p>
+        <div class="setup-warn">⚠️ Keep this file private — it will contain your access token.</div>
+        <div class="setup-fields">
+          <div class="form-group"><label>GitHub Username</label><input type="text" id="sOwner" class="form-input" placeholder="yourusername"></div>
+          <div class="form-group"><label>Repository Name</label><input type="text" id="sRepo" class="form-input" placeholder="my-prompt-vault">
+            <div class="setup-note">Data saved as <code>promptvault.json</code></div>
+          </div>
+          <div class="form-group"><label>Personal Access Token</label><input type="password" id="sToken" class="form-input" placeholder="ghp_xxxxxxxxxxxx">
+            <div class="setup-note">Needs <code>repo</code> scope. <a href="https://github.com/settings/tokens/new?scopes=repo&description=PromptVault" target="_blank">Create token →</a></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="setupBtn" onclick="doSetup()" style="width:100%;justify-content:center;"><i class="fas fa-plug"></i> Save & Connect</button>
+        <div style="margin-top:12px;"><button class="btn btn-secondary btn-sm" onclick="useLocalOnly()" style="width:100%;justify-content:center;">Use without GitHub (local only)</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" style="display:none;">
+    <div class="container">
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:10px;">
+        <div class="sync-indicator" id="syncInd"><div class="sync-dot"></div><span id="syncText">Ready</span></div>
+        <button class="btn btn-secondary btn-sm" onclick="reconnect()"><i class="fas fa-plug"></i> Change GitHub</button>
+      </div>
+
+      <div class="header">
+        <h1>💬 Prompt Vault Pro</h1>
+        <p class="subtitle">Save, Organize & Reuse Your Best Prompts</p>
+      </div>
+
+      <!-- ADD PROMPT CARD -->
+      <div class="glass" style="padding:25px;margin-bottom:24px;">
+        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.2em;font-weight:700;color:#f1f5f9;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+          <span style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;">➕</span>
+          Add New Prompt
+        </h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group"><label>Title</label><input type="text" id="promptTitle" class="form-input" placeholder="e.g., Professional Email Writer"></div>
+          <div class="form-group"><label>Category</label>
+            <select id="promptCategory" class="form-input">
+              <option value="Writing">Writing</option><option value="Coding">Coding</option><option value="Business">Business</option>
+              <option value="Creative">Creative</option><option value="Analysis">Analysis</option><option value="Education">Education</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label>Prompt Content</label><textarea id="promptContent" class="form-input" rows="4" placeholder="Paste your prompt here..."></textarea></div>
+        <div class="form-group"><label>Notes / Tags (optional)</label><input type="text" id="promptNotes" class="form-input" placeholder="e.g., GPT-4, client work, email template"></div>
+        <button class="btn btn-primary" onclick="addPrompt()" style="width:100%;justify-content:center;"><i class="fas fa-save"></i> Save Prompt</button>
+      </div>
+
+      <!-- FILTER & SEARCH -->
+      <div class="glass" style="padding:20px;margin-bottom:20px;">
+        <div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="searchInput" class="form-input" placeholder="Search prompts..." oninput="renderPrompts()"></div>
+        <div class="filter-chips" id="filterChips">
+          <span class="chip active" onclick="filterPrompts('all', this)">All</span>
+          <span class="chip" onclick="filterPrompts('Writing', this)">Writing</span>
+          <span class="chip" onclick="filterPrompts('Coding', this)">Coding</span>
+          <span class="chip" onclick="filterPrompts('Business', this)">Business</span>
+          <span class="chip" onclick="filterPrompts('Creative', this)">Creative</span>
+          <span class="chip" onclick="filterPrompts('Analysis', this)">Analysis</span>
+          <span class="chip" onclick="filterPrompts('Education', this)">Education</span>
+          <span class="chip" onclick="filterPrompts('Other', this)">Other</span>
+        </div>
+      </div>
+
+      <!-- PROMPTS GRID -->
+      <div class="prompts-grid" id="promptsGrid">
+        <div style="text-align:center;padding:50px 20px;color:var(--text3);grid-column:1/-1;">
+          <i class="fas fa-inbox" style="font-size:3em;margin-bottom:15px;opacity:.3;display:block;"></i>
+          <h3 style="color:var(--text2);margin-bottom:8px;">No Prompts Yet</h3>
+          <p>Add your first prompt above!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW MODAL -->
+  <div class="modal-overlay" id="viewModal">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;"><i class="fas fa-eye"></i> View Prompt</h3>
+        <button class="btn btn-secondary btn-sm" onclick="closeView()" style="width:32px;height:32px;padding:0;border-radius:50%;"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group"><label>Title</label><div class="form-input" style="background:transparent;border-color:transparent;padding:10px 0;font-weight:700;font-size:1.1em;" id="viewTitle"></div></div>
+      <div class="form-group"><label>Category</label><span class="prompt-category" id="viewCategory" style="font-size:.85em;"></span></div>
+      <div class="form-group"><label>Prompt Content</label><div style="background:rgba(161,140,209,.06);border:1px solid rgba(161,140,209,.18);border-radius:12px;padding:16px;white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.7;max-height:300px;overflow-y:auto;color:var(--text);" id="viewContent"></div></div>
+      <div class="form-group"><label>Notes / Tags</label><div class="form-input" style="background:transparent;border-color:transparent;padding:10px 0;color:var(--text2);" id="viewNotes"></div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="copyPrompt()"><i class="fas fa-copy"></i> Copy Prompt</button>
+        <button class="btn btn-info" onclick="editFromView()"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-danger" onclick="deleteFromView()"><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-secondary" onclick="closeView()"><i class="fas fa-times"></i> Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <h3 id="editModalTitle">Edit Prompt</h3>
+      <input type="hidden" id="editId">
+      <div class="form-group"><label>Title</label><input type="text" id="editTitle" class="form-input"></div>
+      <div class="form-group"><label>Category</label>
+        <select id="editCategory" class="form-input">
+          <option value="Writing">Writing</option><option value="Coding">Coding</option><option value="Business">Business</option>
+          <option value="Creative">Creative</option><option value="Analysis">Analysis</option><option value="Education">Education</option><option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Prompt Content</label><textarea id="editContent" class="form-input" rows="5"></textarea></div>
+      <div class="form-group"><label>Notes / Tags</label><input type="text" id="editNotes" class="form-input"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" onclick="saveEdit()"><i class="fas fa-save"></i> Save Changes</button>
+        <button class="btn btn-danger" onclick="closeEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    /* ═══════════════════════════════════════════
+       PROMPT VAULT PRO — UNIQUE STORAGE KEYS
+       ═══════════════════════════════════════════ */
+
+    const STORAGE_KEY = 'promptVaultProV1';         // App data
+    const GH_CONFIG_KEY = 'promptVaultGH';           // GitHub config
+    const LOCAL_ONLY_KEY = 'promptVaultLocalOnly';   // Local-only flag
+    const GH_FILE = 'promptvault.json';
+
+    let GH = { owner: '', repo: '', token: '' };
+    let ghSha = null;
+    let saveQueue = Promise.resolve();
+    let isGitHubReady = false;
+    let prompts = [];
+    let currentFilter = 'all';
+    let currentViewId = null;
+
+    /* ══ HELPERS ══ */
+    function genId() { return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9); }
+    function esc(s) { const d = document.createElement('div'); d.textContent = (s === undefined || s === null) ? '' : String(s); return d.innerHTML; }
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${esc(msg)}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3000);
+    }
+    function showCopyToast() {
+      const e = document.querySelector('.copy-toast'); if (e) e.remove();
+      const el = document.createElement('div');
+      el.className = 'copy-toast';
+      el.innerHTML = '<i class="fas fa-check-circle"></i> Copied to clipboard!';
+      document.body.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 2000);
+    }
+    function ghHead(cfg = GH) { return { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' }; }
+    function toB64(s) { const b = new TextEncoder().encode(s); let r = ''; b.forEach(x => r += String.fromCharCode(x)); return btoa(r); }
+    function fromB64(b) {
+      try {
+        const c = b.replace(/\s/g, ''); const bin = atob(c);
+        const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new TextDecoder().decode(bytes);
+      } catch (e) {
+        const bin = atob(b.replace(/\s/g, '')); const bytes = [];
+        for (let i = 0; i < bin.length; i++) bytes.push(bin.charCodeAt(i));
+        return new TextDecoder().decode(new Uint8Array(bytes));
+      }
+    }
+    function setSyncStatus(state, text) {
+      const el = document.getElementById('syncInd'); const tx = document.getElementById('syncText');
+      if (!el) return; el.className = 'sync-indicator ' + state; tx.textContent = text;
+    }
+
+    /* ══ GITHUB SYNC ══ */
+    async function ghLoad() {
+      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH_FILE}`, { headers: ghHead() });
+      if (r.status === 404) { ghSha = null; return null; }
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+      const d = await r.json(); ghSha = d.sha;
+      return JSON.parse(fromB64(d.content));
+    }
+    async function ghSave(data) {
+      const body = { message: 'PromptVault update', content: toB64(JSON.stringify(data, null, 2)) };
+      if (ghSha) body.sha = ghSha;
+      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH_FILE}`, { method: 'PUT', headers: ghHead(), body: JSON.stringify(body) });
+      if (r.status === 409) {
+        await ghLoad();
+        const body2 = { message: 'PromptVault update', content: toB64(JSON.stringify(data, null, 2)), sha: ghSha };
+        const r2 = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH_FILE}`, { method: 'PUT', headers: ghHead(), body: JSON.stringify(body2) });
+        if (!r2.ok) { const e = await r2.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r2.status}`); }
+        const d2 = await r2.json(); ghSha = d2.content.sha; return;
+      }
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+      const d = await r.json(); ghSha = d.content.sha;
+    }
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+      if (!isGitHubReady || !GH.owner || !GH.token) return Promise.resolve();
+      saveQueue = saveQueue.then(async () => {
+        setSyncStatus('syncing', 'Saving...');
+        try { await ghSave(JSON.parse(JSON.stringify(prompts))); setSyncStatus('synced', 'Saved ✓'); setTimeout(() => setSyncStatus('synced', 'Synced'), 2000); }
+        catch (e) { setSyncStatus('error', 'Save failed'); showToast('Sync failed', e.message, 'error'); }
+      });
+      return saveQueue;
+    }
+
+    /* ══ SETUP ══ */
+    async function doSetup() {
+      const owner = document.getElementById('sOwner').value.trim();
+      const repo = document.getElementById('sRepo').value.trim();
+      const token = document.getElementById('sToken').value.trim();
+      if (!owner || !repo || !token) { showToast('Missing fields', 'Fill in all GitHub details', 'error'); return; }
+      const btn = document.getElementById('setupBtn');
+      btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;"></span> Connecting...';
+      btn.disabled = true;
+      try {
+        const ur = await fetch('https://api.github.com/user', { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+        if (!ur.ok) throw new Error('Invalid token.');
+        const rr = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: ghHead({ owner, repo, token }) });
+        if (rr.status === 404) throw new Error(`Repository "${owner}/${repo}" not found.`);
+        if (!rr.ok) { const e = await rr.json().catch(() => ({})); throw new Error(e.message || 'Cannot access repo.'); }
+        GH = { owner, repo, token };
+        localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(GH));
+        localStorage.removeItem(LOCAL_ONLY_KEY);
+        isGitHubReady = true;
+        try { const d = await ghLoad(); if (d) prompts = d; else await ghSave(prompts); } catch (e) { showToast('Sync warning', e.message, 'error'); }
+        document.getElementById('setupScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        renderPrompts();
+        setSyncStatus('synced', 'Connected');
+        showToast('Connected', 'Ready to save prompts!', 'success');
+      } catch (e) { showToast('Connection failed', e.message, 'error'); }
+      btn.innerHTML = '<i class="fas fa-plug"></i> Save & Connect'; btn.disabled = false;
+    }
+    function useLocalOnly() { localStorage.setItem(LOCAL_ONLY_KEY, '1'); isGitHubReady = false; document.getElementById('setupScreen').style.display = 'none'; document.getElementById('app').style.display = 'block'; renderPrompts(); setSyncStatus('synced', 'Local only'); }
+    function reconnect() { localStorage.removeItem(GH_CONFIG_KEY); localStorage.removeItem(LOCAL_ONLY_KEY); isGitHubReady = false; GH = {}; ghSha = null; document.getElementById('app').style.display = 'none'; document.getElementById('setupScreen').style.display = 'block'; }
+
+    /* ══ INIT ══ */
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        const savedGH = JSON.parse(localStorage.getItem(GH_CONFIG_KEY) || '{}');
+        if (savedGH.owner && savedGH.token) {
+          GH = savedGH; isGitHubReady = true;
+          document.getElementById('setupScreen').style.display = 'none'; document.getElementById('app').style.display = 'block';
+          (async () => { try { const d = await ghLoad(); if (d) { prompts = d; persist(); } } catch (e) { console.warn('BG sync failed'); } renderPrompts(); setSyncStatus('synced', 'Connected'); })();
+        } else if (localStorage.getItem(LOCAL_ONLY_KEY) === '1') {
+          document.getElementById('setupScreen').style.display = 'none'; document.getElementById('app').style.display = 'block';
+          const s = localStorage.getItem(STORAGE_KEY); if (s) try { prompts = JSON.parse(s); } catch (e) { }
+          renderPrompts(); setSyncStatus('synced', 'Local only');
+        } else { document.getElementById('setupScreen').style.display = 'block'; }
+      } catch (e) { document.getElementById('setupScreen').style.display = 'block'; }
+    });
+
+    /* ══ PROMPT CRUD ══ */
+    function addPrompt() {
+      const title = document.getElementById('promptTitle').value.trim();
+      const category = document.getElementById('promptCategory').value;
+      const content = document.getElementById('promptContent').value.trim();
+      const notes = document.getElementById('promptNotes').value.trim();
+      if (!title || !content) { showToast('Required', 'Title and content are required', 'error'); return; }
+      prompts.push({ id: genId(), title, category, content, notes: notes || '', date: new Date().toISOString() });
+      document.getElementById('promptTitle').value = '';
+      document.getElementById('promptContent').value = '';
+      document.getElementById('promptNotes').value = '';
+      persist(); renderPrompts();
+      showToast('Saved!', `"${title}" added to vault`, 'success');
+    }
+    function deletePrompt(id) { if (!confirm('Delete this prompt?')) return; prompts = prompts.filter(p => p.id !== id); if (currentViewId === id) closeView(); persist(); renderPrompts(); showToast('Deleted', 'Prompt removed', 'success'); }
+    function viewPrompt(id) { const p = prompts.find(x => x.id === id); if (!p) return; currentViewId = id; document.getElementById('viewTitle').textContent = p.title; document.getElementById('viewCategory').textContent = p.category; document.getElementById('viewContent').textContent = p.content; document.getElementById('viewNotes').textContent = p.notes || 'No notes'; document.getElementById('viewModal').classList.add('show'); }
+    function closeView() { document.getElementById('viewModal').classList.remove('show'); currentViewId = null; }
+    function copyPrompt() {
+      const text = document.getElementById('viewContent').textContent;
+      navigator.clipboard.writeText(text).then(() => showCopyToast()).catch(() => {
+        const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showCopyToast(); } catch (e) { showToast('Copy failed', '', 'error'); } document.body.removeChild(ta);
+      });
+    }
+    function editFromView() { if (!currentViewId) return; closeView(); openEdit(currentViewId); }
+    function deleteFromView() { if (!currentViewId) return; deletePrompt(currentViewId); closeView(); }
+    function openEdit(id) { const p = prompts.find(x => x.id === id); if (!p) return; document.getElementById('editId').value = id; document.getElementById('editTitle').value = p.title; document.getElementById('editCategory').value = p.category; document.getElementById('editContent').value = p.content; document.getElementById('editNotes').value = p.notes || ''; document.getElementById('editModal').classList.add('show'); }
+    function closeEdit() { document.getElementById('editModal').classList.remove('show'); }
+    function saveEdit() {
+      const id = document.getElementById('editId').value; const p = prompts.find(x => x.id === id); if (!p) return;
+      p.title = document.getElementById('editTitle').value.trim() || p.title;
+      p.category = document.getElementById('editCategory').value;
+      p.content = document.getElementById('editContent').value.trim() || p.content;
+      p.notes = document.getElementById('editNotes').value.trim();
+      closeEdit(); persist(); renderPrompts(); showToast('Updated', `"${p.title}" saved`, 'success');
+    }
+    function filterPrompts(cat, el) {
+      currentFilter = cat;
+      document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+      renderPrompts();
+    }
+
+    /* ══ RENDER ══ */
+    function renderPrompts() {
+      const grid = document.getElementById('promptsGrid');
+      const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      let filtered = [...prompts].sort((a, b) => new Date(b.date) - new Date(a.date));
+      if (currentFilter !== 'all') filtered = filtered.filter(p => p.category === currentFilter);
+      if (search) filtered = filtered.filter(p => p.title.toLowerCase().includes(search) || p.content.toLowerCase().includes(search) || p.notes.toLowerCase().includes(search) || p.category.toLowerCase().includes(search));
+
+      if (!filtered.length) {
+        grid.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--text3);grid-column:1/-1;"><i class="fas fa-inbox" style="font-size:3em;margin-bottom:15px;opacity:.3;display:block;"></i><h3 style="color:var(--text2);margin-bottom:8px;">${search ? 'No Matching Prompts' : 'No Prompts Yet'}</h3><p>${search ? 'Try a different search term.' : 'Add your first prompt above!'}</p></div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => {
+        const preview = p.content.length > 150 ? p.content.slice(0, 150) + '…' : p.content;
+        return `<div class="prompt-card">
+          <div class="prompt-header">
+            <div class="prompt-title">${esc(p.title)}</div>
+            <span class="prompt-category">${esc(p.category)}</span>
+          </div>
+          <div class="prompt-preview">${esc(preview)}</div>
+          <div class="prompt-meta">
+            <span>${new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <div class="prompt-actions">
+              <button class="btn btn-info btn-xs" onclick="viewPrompt('${p.id}')" title="View"><i class="fas fa-eye"></i></button>
+              <button class="btn btn-success btn-xs" onclick="copyPromptById('${p.id}')" title="Copy"><i class="fas fa-copy"></i></button>
+              <button class="btn btn-warning btn-xs" onclick="openEdit('${p.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-danger btn-xs" onclick="deletePrompt('${p.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function copyPromptById(id) {
+      const p = prompts.find(x => x.id === id); if (!p) return;
+      navigator.clipboard.writeText(p.content).then(() => showCopyToast()).catch(() => {
+        const ta = document.createElement('textarea'); ta.value = p.content; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showCopyToast(); } catch (e) { showToast('Copy failed', '', 'error'); } document.body.removeChild(ta);
+      });
+    }
+
+    /* ══ MODAL BACKDROP CLOSE ══ */
+    document.getElementById('viewModal').addEventListener('click', function (e) { if (e.target === this) closeView(); });
+    document.getElementById('editModal').addEventListener('click', function (e) { if (e.target === this) closeEdit(); });
+
+    /* ══ SPIN KEYFRAME ══ */
+    const st = document.createElement('style'); st.textContent = '@keyframes spin{to{transform:rotate(360deg);}}'; document.head.appendChild(st);
+  </script>
+</body>
+</html>
